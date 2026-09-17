@@ -20,7 +20,17 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        User::create($request->all());
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+            'nim_nip'  => 'nullable|string|unique:users,nim_nip',
+            'role'     => 'required|in:admin,dosen,mahasiswa',
+        ]);
+
+        $validated['password'] = bcrypt($validated['password']);
+
+        User::create($validated);
 
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan');
     }
@@ -37,7 +47,21 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $user->update($request->all());
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|min:8',
+            'nim_nip'  => 'nullable|string|unique:users,nim_nip,' . $user->id,
+            'role'     => 'required|in:admin,dosen,mahasiswa',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = bcrypt($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        $user->update($validated);
 
         return redirect()->route('users.index')->with('success', 'User berhasil diperbarui');
     }
